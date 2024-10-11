@@ -1507,21 +1507,103 @@ impl<T: Num + Clone> Num for Complex<T> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct ComplexSIMD<T>([Complex<T>; 4]);
+
+impl<T: Clone + Num> ComplexSIMD<T> {
+    fn sum(&self) -> Complex<T> {
+        self.0[0].clone() + self.0[1].clone() + self.0[2].clone() + self.0[3].clone()
+    }
+}
+
+impl<T: Clone + Num> Add for ComplexSIMD<T> {
+    type Output = ComplexSIMD<T>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self([
+            self.0[0].clone() + rhs.0[0].clone(),
+            self.0[1].clone() + rhs.0[1].clone(),
+            self.0[2].clone() + rhs.0[2].clone(),
+            self.0[3].clone() + rhs.0[3].clone(),
+        ])
+    }
+}
+
 impl<T: Num + Clone> Sum for Complex<T> {
-    fn sum<I>(iter: I) -> Self
+    fn sum<I>(mut iter: I) -> Self
     where
         I: Iterator<Item = Self>,
     {
-        iter.fold(Self::zero(), |acc, c| acc + c)
+        let mut complex_sum = ComplexSIMD::<T>([
+            Complex::zero(),
+            Complex::zero(),
+            Complex::zero(),
+            Complex::zero(),
+        ]);
+        loop {
+            if let Some(val0) = iter.next() {
+                if let Some(val1) = iter.next() {
+                    if let Some(val2) = iter.next() {
+                        if let Some(val3) = iter.next() {
+                            complex_sum = complex_sum
+                                + ComplexSIMD::<T>([
+                                    val0.clone(),
+                                    val1.clone(),
+                                    val2.clone(),
+                                    val3.clone(),
+                                ]);
+                        } else {
+                            return complex_sum.sum() + val0 + val1 + val2;
+                        }
+                    } else {
+                        return complex_sum.sum() + val0 + val1;
+                    }
+                } else {
+                    return complex_sum.sum() + val0;
+                }
+            } else {
+                return complex_sum.sum();
+            }
+        }
     }
 }
 
 impl<'a, T: 'a + Num + Clone> Sum<&'a Complex<T>> for Complex<T> {
-    fn sum<I>(iter: I) -> Self
+    fn sum<I>(mut iter: I) -> Self
     where
         I: Iterator<Item = &'a Complex<T>>,
     {
-        iter.fold(Self::zero(), |acc, c| acc + c)
+        let mut complex_sum = ComplexSIMD::<T>([
+            Complex::zero(),
+            Complex::zero(),
+            Complex::zero(),
+            Complex::zero(),
+        ]);
+        loop {
+            if let Some(val0) = iter.next() {
+                if let Some(val1) = iter.next() {
+                    if let Some(val2) = iter.next() {
+                        if let Some(val3) = iter.next() {
+                            complex_sum = complex_sum
+                                + ComplexSIMD::<T>([
+                                    val0.clone(),
+                                    val1.clone(),
+                                    val2.clone(),
+                                    val3.clone(),
+                                ]);
+                        } else {
+                            return complex_sum.sum() + val0 + val1 + val2;
+                        }
+                    } else {
+                        return complex_sum.sum() + val0 + val1;
+                    }
+                } else {
+                    return complex_sum.sum() + val0;
+                }
+            } else {
+                return complex_sum.sum();
+            }
+        }
     }
 }
 
